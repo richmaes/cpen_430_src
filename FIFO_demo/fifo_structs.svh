@@ -14,13 +14,21 @@
 
 typedef struct packed {
     logic [31:0]  data;     // bits [34:3]
-    logic [1:0]   pri;  // bits [2:1]
+    logic         err;  // bits [2:1]
     logic         sop;
     logic         eop;
+
+} packet_t;
+
+typedef struct packed {
+    packet_t     pkt;
     logic         we;        // bits [0]
 } control_t;
 
+
+
 // Optional constant for total width
 `define CONTROL_W $bits(control_t);
+`define PACKET_W  $bits(packet_t);
 
 `endif // __FIFO_STRUCTS_SVH__
