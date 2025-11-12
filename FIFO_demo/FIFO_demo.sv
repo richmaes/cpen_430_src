@@ -22,10 +22,21 @@ module FIFO_demo #(
    logic [3:0] empty_w;
    logic [3:0] full_w;
    logic [3:0][31:0] dout_w;
-   logic [3:0] rd_en_w;
-   logic [1:0] pri_select;
+   logic [3:0] rd_en_w, rd_en_d;
+   logic [1:0] pri_select, nxt_pri_select;
    logic [3:0][3:0] usedw_sig;
+   logic arb;
+   packet_t pkt_w [0:3];
+
+   packet_t pkt_w_0, pkt_w_1, pkt_w_2, pkt_w_3;
         
+    assign pkt_w_0 = pkt_w[0];
+    assign pkt_w_1 = pkt_w[1];
+    assign pkt_w_2 = pkt_w[2];
+    assign pkt_w_3 = pkt_w[3];
+    
+
+
    // Make 4 instances of this FIFO to demonstrate the use of structs
    generate 
     genvar i;
@@ -40,7 +51,7 @@ module FIFO_demo #(
 	.wrreq ( cntrl_in[i].we  ),
 	.empty ( empty_w[i] ),
 	.full ( full_w[i] ),
-	.q ( dout_w[i] ),
+	.q ( pkt_w[i] ),
 	.usedw ( usedw_sig[i] )
     
 	);
@@ -53,9 +64,11 @@ module FIFO_demo #(
    always @ (*)
    begin
     empty = &empty_w;
-    pri_select = empty_w[0] ? 2'b00 :
-                 empty_w[1] ? 2'b01 :
-                 empty_w[2] ? 2'b10 : 2'b11;
+    // This is a priority selector that only changes on assertion of arb.
+    nxt_pri_select = arb & !empty_w[0] ? 2'b00 :
+                     arb & !empty_w[1] ? 2'b01 :
+                     arb & !empty_w[2] ? 2'b10 : 
+                     arb & !empty_w[3] ? 2'b11 : pri_select;
 
     rd_en_w = 4'b0000 | ({3'b000, rd_en} << pri_select);
 
@@ -65,6 +78,32 @@ module FIFO_demo #(
         2'b10: dout = dout_w[2];
         2'b11: dout = dout_w[3];
    endcase
+   end
+
+   always @ (posedge clk)
+   begin
+      rd_en_d <= rd_en_w;
+   end
+
+   always @ (posedge clk)
+   begin
+    if (rst)
+    begin
+        pri_select <= 2'b00;
+        arb <= 1'b1;
+    end
+    else
+    begin
+        pri_select <= nxt_pri_select;
+        arb <= rd_en_d[0] && pri_select == 2'b00 && pkt_w[0].eop ? 1'b1 :
+               rd_en_d[0] && pri_select == 2'b00 && pkt_w[0].sop ? 1'b0 :
+               rd_en_d[1] && pri_select == 2'b01 && pkt_w[1].eop ? 1'b1 :
+               rd_en_d[1] && pri_select == 2'b01 && pkt_w[1].sop ? 1'b0 :
+               rd_en_d[2] && pri_select == 2'b10 && pkt_w[2].eop ? 1'b1 :
+               rd_en_d[2] && pri_select == 2'b10 && pkt_w[2].sop ? 1'b0 :
+               rd_en_d[3] && pri_select == 2'b11 && pkt_w[3].eop ? 1'b1 :
+               rd_en_d[3] && pri_select == 2'b11 && pkt_w[3].sop ? 1'b0 : arb;
+    end
    end
 
 

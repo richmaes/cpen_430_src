@@ -20,6 +20,7 @@ module tb_FIFO_demo;
     logic [3:0]full;
     logic empty;
     logic [$clog2(DEPTH):0] count;
+    logic [3:0] pip;
 
     control_t cntrl_in [0:3];
 
@@ -27,7 +28,6 @@ module tb_FIFO_demo;
     FIFO_demo #(.WIDTH(WIDTH), .DEPTH(DEPTH)) fifo (
         .clk(clk),
         .rst(rst),
-        .wr_en(wr_en),
         .rd_en(rd_en),
         .cntrl_in(cntrl_in),
         .dout(dout),
@@ -45,6 +45,7 @@ module tb_FIFO_demo;
         for (int k = 0; k < 4; k = k + 1)
         begin
            cntrl_in[k] = 'h0000_0000;
+           pip[k] = 1'b0;
         end
         
 
@@ -92,6 +93,8 @@ module tb_FIFO_demo;
         automatic control_t ctrl;
         int i;
         begin
+            while(pip[0]) repeat(1) @ (posedge clk);
+            
             // Guard: if size <= 0 do nothing
             if (size <= 0) begin
                 $display("%0t: load_packet_0 called with non-positive size=%0d", $time, size);
@@ -128,6 +131,7 @@ module tb_FIFO_demo;
             ctrl.pkt.sop = 1'b0;
             ctrl.pkt.eop = 1'b0;
             cntrl_in[0] = ctrl;
+            pip[0]=1'b0;
             @(posedge clk);
         end
     endtask
@@ -142,6 +146,7 @@ module tb_FIFO_demo;
         logic [31:0] timeout;
         int i;
         begin
+            while(pip[1])repeat (1) @ (posedge clk);
             timeout = 0;
             // Guard: if size <= 0 do nothing
             if (size <= 0) begin
@@ -180,6 +185,7 @@ module tb_FIFO_demo;
             ctrl.pkt.sop = 1'b0;
             ctrl.pkt.eop = 1'b0;
             cntrl_in[1] = ctrl;
+             pip[1]=1'b0;
             @(posedge clk);
         end
     endtask
@@ -193,6 +199,7 @@ module tb_FIFO_demo;
         automatic control_t ctrl;
         int i;
         begin
+            while(pip[2])repeat (1) @ (posedge clk);
             // Guard: if size <= 0 do nothing
             if (size <= 0) begin
                 $display("%0t: load_packet_2 called with non-positive size=%0d", $time, size);
@@ -230,6 +237,7 @@ module tb_FIFO_demo;
             ctrl.pkt.sop = 1'b0;
             ctrl.pkt.eop = 1'b0;
             cntrl_in[2] = ctrl;
+             pip[2]=1'b0;
             @(posedge clk);
         end
     endtask
@@ -243,6 +251,7 @@ module tb_FIFO_demo;
         automatic control_t ctrl;
         int i;
         begin
+            while(pip[3]) repeat (1) @ (posedge clk);
             // Guard: if size <= 0 do nothing
             if (size <= 0) begin
                 $display("%0t: load_packet_3 called with non-positive size=%0d", $time, size);
@@ -280,6 +289,7 @@ module tb_FIFO_demo;
             ctrl.pkt.sop = 1'b0;
             ctrl.pkt.eop = 1'b0;
             cntrl_in[3] = ctrl;
+             pip[3]=1'b0;
             @(posedge clk);
         end
     endtask
