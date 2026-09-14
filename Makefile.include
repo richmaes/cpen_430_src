@@ -1,11 +1,13 @@
 GUI ?= 0
 
 VLOG_CMD = vlog $(RTL_FILES) $(TB_FILES) $(INCDIR)
+VLOG_CMD += -L altera_mf_ver
 VLOG_CMD += -64
 VLOG_CMD += +define+SIMULATION
 
 VOPT_CMD = vopt 
 VOPT_CMD += work.$(TOP_MODULE)
+VOPT_CMD += -L altera_mf_ver
 VOPT_CMD += -64 
 #VOPT_CMD += +access=rw
 VOPT_CMD += -debugdb
@@ -14,6 +16,7 @@ VOPT_CMD += -o $(TOP_OPT_MODULE)
 
 VSIM_CMD = vsim
 VSIM_CMD += -64 
+VSIM_CMD += -voptargs="-L altera_mf"
 ifeq ($(GUI),0)
   VSIM_CMD += -c
 endif
@@ -23,7 +26,7 @@ VSIM_CMD += -nowlfcompress
 VSIM_CMD += -nowlfdeleteonquit
 VSIM_CMD += +fsdb+all=on
 VSIM_CMD += -wlf $(TOP_MODULE).wlf
-VSIM_CMD += $(TOP_MODULE)
+VSIM_CMD += $(TOP_OPT_MODULE)
 VSIM_CMD += -do "../run.do"
 
 GUI_CMD = vsim
@@ -42,7 +45,7 @@ compile:
 optimize: compile
 	$(VOPT_CMD)
 
-simulate: compile
+simulate: optimize compile
 	$(VSIM_CMD)
 
 gui:

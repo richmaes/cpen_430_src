@@ -1,12 +1,12 @@
 `timescale 1ns/1ps
 `include "fifo_structs.svh"
 module tb_FIFO_demo;
-    parameter WIDTH = 8;
+    parameter WIDTH = 33;
     parameter DEPTH = 16;
 
     logic clk;
     logic rst;
-    logic wr_en;
+    logic [3:0] wr_en;
     logic rd_en;
     logic [WIDTH-1:0] din;
     logic [WIDTH-1:0] dout;
@@ -33,6 +33,9 @@ module tb_FIFO_demo;
 
     // Test stimulus
     initial begin
+        wr_en = 4'b0000;
+        rd_en = 0;
+        din = '0;   
 
         #20;
         while (!rst) @(posedge clk);
