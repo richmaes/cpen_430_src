@@ -48,6 +48,9 @@ optimize: compile
 simulate: optimize compile
 	$(VSIM_CMD)
 
+sim: optimize compile
+	$(VSIM_CMD)
+
 gui:
 	$(GUI_CMD)
 
