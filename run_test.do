@@ -10,8 +10,8 @@ if {[file exists work]} {
 vlib work
 
 # Compile the Verilog files
-vlog assert_cpen430.v
-vlog assert_cpen430_tb.v
+vlog common/assert_cpen430.v
+vlog assert_tb/assert_cpen430_tb.v
 
 # Start simulation
 vsim -c assert_cpen430_tb
