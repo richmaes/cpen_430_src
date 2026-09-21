@@ -1,4 +1,5 @@
 fifo_33x16	fifo_33x16_inst (
+	.aclr ( aclr_sig ),
 	.clock ( clock_sig ),
 	.data ( data_sig ),
 	.rdreq ( rdreq_sig ),

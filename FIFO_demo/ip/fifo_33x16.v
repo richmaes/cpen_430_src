@@ -37,6 +37,7 @@
 `timescale 1 ps / 1 ps
 // synopsys translate_on
 module fifo_33x16 (
+	aclr,
 	clock,
 	data,
 	rdreq,
@@ -46,25 +47,27 @@ module fifo_33x16 (
 	q,
 	usedw);
 
+	input	  aclr;
 	input	  clock;
-	input	[32:0]  data;
+	input	[34:0]  data;
 	input	  rdreq;
 	input	  wrreq;
 	output	  empty;
 	output	  full;
-	output	[32:0]  q;
+	output	[34:0]  q;
 	output	[3:0]  usedw;
 
 	wire  sub_wire0;
 	wire  sub_wire1;
-	wire [32:0] sub_wire2;
+	wire [34:0] sub_wire2;
 	wire [3:0] sub_wire3;
 	wire  empty = sub_wire0;
 	wire  full = sub_wire1;
-	wire [32:0] q = sub_wire2[32:0];
+	wire [34:0] q = sub_wire2[34:0];
 	wire [3:0] usedw = sub_wire3[3:0];
 
 	scfifo	scfifo_component (
+				.aclr (aclr),
 				.clock (clock),
 				.data (data),
 				.rdreq (rdreq),
@@ -73,7 +76,6 @@ module fifo_33x16 (
 				.full (sub_wire1),
 				.q (sub_wire2),
 				.usedw (sub_wire3),
-				.aclr (),
 				.almost_empty (),
 				.almost_full (),
 				.eccstatus (),
@@ -84,7 +86,7 @@ module fifo_33x16 (
 		scfifo_component.lpm_numwords = 16,
 		scfifo_component.lpm_showahead = "OFF",
 		scfifo_component.lpm_type = "scfifo",
-		scfifo_component.lpm_width = 33,
+		scfifo_component.lpm_width = 35,
 		scfifo_component.lpm_widthu = 4,
 		scfifo_component.overflow_checking = "ON",
 		scfifo_component.underflow_checking = "ON",
@@ -100,7 +102,7 @@ endmodule
 // Retrieval info: PRIVATE: AlmostEmptyThr NUMERIC "-1"
 // Retrieval info: PRIVATE: AlmostFull NUMERIC "0"
 // Retrieval info: PRIVATE: AlmostFullThr NUMERIC "-1"
-// Retrieval info: PRIVATE: CLOCKS_ARE_SYNCHRONIZED NUMERIC "0"
+// Retrieval info: PRIVATE: CLOCKS_ARE_SYNCHRONIZED NUMERIC "1"
 // Retrieval info: PRIVATE: Clock NUMERIC "0"
 // Retrieval info: PRIVATE: Depth NUMERIC "16"
 // Retrieval info: PRIVATE: Empty NUMERIC "1"
@@ -115,15 +117,15 @@ endmodule
 // Retrieval info: PRIVATE: SYNTH_WRAPPER_GEN_POSTFIX STRING "0"
 // Retrieval info: PRIVATE: UNDERFLOW_CHECKING NUMERIC "0"
 // Retrieval info: PRIVATE: UsedW NUMERIC "1"
-// Retrieval info: PRIVATE: Width NUMERIC "33"
+// Retrieval info: PRIVATE: Width NUMERIC "35"
 // Retrieval info: PRIVATE: dc_aclr NUMERIC "0"
 // Retrieval info: PRIVATE: diff_widths NUMERIC "0"
 // Retrieval info: PRIVATE: msb_usedw NUMERIC "0"
-// Retrieval info: PRIVATE: output_width NUMERIC "33"
+// Retrieval info: PRIVATE: output_width NUMERIC "35"
 // Retrieval info: PRIVATE: rsEmpty NUMERIC "1"
 // Retrieval info: PRIVATE: rsFull NUMERIC "0"
 // Retrieval info: PRIVATE: rsUsedW NUMERIC "0"
-// Retrieval info: PRIVATE: sc_aclr NUMERIC "0"
+// Retrieval info: PRIVATE: sc_aclr NUMERIC "1"
 // Retrieval info: PRIVATE: sc_sclr NUMERIC "0"
 // Retrieval info: PRIVATE: wsEmpty NUMERIC "0"
 // Retrieval info: PRIVATE: wsFull NUMERIC "1"
@@ -134,26 +136,28 @@ endmodule
 // Retrieval info: CONSTANT: LPM_NUMWORDS NUMERIC "16"
 // Retrieval info: CONSTANT: LPM_SHOWAHEAD STRING "OFF"
 // Retrieval info: CONSTANT: LPM_TYPE STRING "scfifo"
-// Retrieval info: CONSTANT: LPM_WIDTH NUMERIC "33"
+// Retrieval info: CONSTANT: LPM_WIDTH NUMERIC "35"
 // Retrieval info: CONSTANT: LPM_WIDTHU NUMERIC "4"
 // Retrieval info: CONSTANT: OVERFLOW_CHECKING STRING "ON"
 // Retrieval info: CONSTANT: UNDERFLOW_CHECKING STRING "ON"
 // Retrieval info: CONSTANT: USE_EAB STRING "ON"
+// Retrieval info: USED_PORT: aclr 0 0 0 0 INPUT NODEFVAL "aclr"
 // Retrieval info: USED_PORT: clock 0 0 0 0 INPUT NODEFVAL "clock"
-// Retrieval info: USED_PORT: data 0 0 33 0 INPUT NODEFVAL "data[32..0]"
+// Retrieval info: USED_PORT: data 0 0 35 0 INPUT NODEFVAL "data[34..0]"
 // Retrieval info: USED_PORT: empty 0 0 0 0 OUTPUT NODEFVAL "empty"
 // Retrieval info: USED_PORT: full 0 0 0 0 OUTPUT NODEFVAL "full"
-// Retrieval info: USED_PORT: q 0 0 33 0 OUTPUT NODEFVAL "q[32..0]"
+// Retrieval info: USED_PORT: q 0 0 35 0 OUTPUT NODEFVAL "q[34..0]"
 // Retrieval info: USED_PORT: rdreq 0 0 0 0 INPUT NODEFVAL "rdreq"
 // Retrieval info: USED_PORT: usedw 0 0 4 0 OUTPUT NODEFVAL "usedw[3..0]"
 // Retrieval info: USED_PORT: wrreq 0 0 0 0 INPUT NODEFVAL "wrreq"
+// Retrieval info: CONNECT: @aclr 0 0 0 0 aclr 0 0 0 0
 // Retrieval info: CONNECT: @clock 0 0 0 0 clock 0 0 0 0
-// Retrieval info: CONNECT: @data 0 0 33 0 data 0 0 33 0
+// Retrieval info: CONNECT: @data 0 0 35 0 data 0 0 35 0
 // Retrieval info: CONNECT: @rdreq 0 0 0 0 rdreq 0 0 0 0
 // Retrieval info: CONNECT: @wrreq 0 0 0 0 wrreq 0 0 0 0
 // Retrieval info: CONNECT: empty 0 0 0 0 @empty 0 0 0 0
 // Retrieval info: CONNECT: full 0 0 0 0 @full 0 0 0 0
-// Retrieval info: CONNECT: q 0 0 33 0 @q 0 0 33 0
+// Retrieval info: CONNECT: q 0 0 35 0 @q 0 0 35 0
 // Retrieval info: CONNECT: usedw 0 0 4 0 @usedw 0 0 4 0
 // Retrieval info: GEN_FILE: TYPE_NORMAL fifo_33x16.v TRUE
 // Retrieval info: GEN_FILE: TYPE_NORMAL fifo_33x16.inc FALSE
