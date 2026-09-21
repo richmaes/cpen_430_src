@@ -10,70 +10,65 @@ module FIFO_demo #(
 )(
     input  logic clk,
     input  logic rst,
-    input  logic [3:0]wr_en,
     input  logic rd_en,
-    input  logic [WIDTH-1:0] din ,
-    output logic [WIDTH-1:0] dout,
-    output logic full,
+    input  wire control_t cntrl_in [0:3],
+    output logic [31:0] dout,
+    output logic [3:0] full,
     output logic empty,
     output logic [$clog2(DEPTH):0] count
 );
  
+  
    logic [3:0] empty_w;
    logic [3:0] full_w;
-   logic [3:0][WIDTH-1:0] dout_w;
-   logic [3:0][3:0] usedw_w;
-   logic [3:0] rd_en_w;
-   logic [1:0] pri_select;
-    logic [1:0] next_pri_select;
-   logic [1:0] fifo_select;
-   logic [3:0] pkt_ip; // Packet in progress
-    logic [3:0] next_empty_w;
-   logic fifo_available;
-    logic next_fifo_available;
+   logic [3:0][31:0] dout_w;
+   logic [3:0] rd_en_w, rd_en_d;
+   logic [1:0] pri_select, nxt_pri_select;
+   logic [3:0][3:0] usedw_sig;
+   logic arb;
+   packet_t pkt_w [0:3];
 
+   packet_t pkt_w_0, pkt_w_1, pkt_w_2, pkt_w_3;
         
+    assign pkt_w_0 = pkt_w[0];
+    assign pkt_w_1 = pkt_w[1];
+    assign pkt_w_2 = pkt_w[2];
+    assign pkt_w_3 = pkt_w[3];
+    
+
+
    // Make 4 instances of this FIFO to demonstrate the use of structs
    generate 
     genvar i;
   
        for (i = 0; i < 4; i = i + 1) begin : fifo_inst
 
-   fifo_33x16	fifo_33x16_inst0 (
-    .clock ( clk ),
-    .data ( din ),
+   fifo_33x16	fifo_35x16_inst0 (
+	.clock ( clk ),
+    .aclr ( rst ),
+	.data ( cntrl_in[i].pkt ),
 	.rdreq ( rd_en_w[i] ),
-	.wrreq (wr_en[i] ),
+	.wrreq ( cntrl_in[i].we  ),
 	.empty ( empty_w[i] ),
 	.full ( full_w[i] ),
-	.q ( dout_w[i] ),
-    .usedw ( usedw_w[i] )
+	.q ( pkt_w[i] ),
+	.usedw ( usedw_sig[i] )
+    
 	);
        end
 
    endgenerate
 
-  
-  always_ff @(posedge clk)
-  begin
-    if (rst) begin
-       pkt_ip <= 4'b0000;
-    end
-    else if (rd_en && fifo_available) begin
-        if (dout[32]) begin
-            pkt_ip <= next_fifo_available ? (4'b0001 << next_pri_select) : 4'b0000;
-        end
-        else begin
-            pkt_ip <= 4'b0001 << fifo_select;
-        end
-    end
-  end
+   assign full = full_w;
 
    always @ (*)
    begin
-    pri_select = !empty_w[0] ? 2'b00 :
-                 !empty_w[1] ? 2'b01 :
-                 !empty_w[2] ? 2'b10 : 2'b11;
+    empty = &empty_w;
+    // This is a priority selector that only changes on assertion of arb.
+    nxt_pri_select = arb & !empty_w[0] ? 2'b00 :
+                     arb & !empty_w[1] ? 2'b01 :
+                     arb & !empty_w[2] ? 2'b10 : 
+                     arb & !empty_w[3] ? 2'b11 : pri_select;
 
     fifo_select = pkt_ip[0] ? 2'b00 :
                   pkt_ip[1] ? 2'b01 :
@@ -104,6 +99,32 @@ module FIFO_demo #(
     full = |full_w;
     empty = &empty_w;
     count = usedw_w[fifo_select];
+   end
+
+   always @ (posedge clk)
+   begin
+      rd_en_d <= rd_en_w;
+   end
+
+   always @ (posedge clk)
+   begin
+    if (rst)
+    begin
+        pri_select <= 2'b00;
+        arb <= 1'b1;
+    end
+    else
+    begin
+        pri_select <= nxt_pri_select;
+        arb <= rd_en_d[0] && pri_select == 2'b00 && pkt_w[0].eop ? 1'b1 :
+               rd_en_d[0] && pri_select == 2'b00 && pkt_w[0].sop ? 1'b0 :
+               rd_en_d[1] && pri_select == 2'b01 && pkt_w[1].eop ? 1'b1 :
+               rd_en_d[1] && pri_select == 2'b01 && pkt_w[1].sop ? 1'b0 :
+               rd_en_d[2] && pri_select == 2'b10 && pkt_w[2].eop ? 1'b1 :
+               rd_en_d[2] && pri_select == 2'b10 && pkt_w[2].sop ? 1'b0 :
+               rd_en_d[3] && pri_select == 2'b11 && pkt_w[3].eop ? 1'b1 :
+               rd_en_d[3] && pri_select == 2'b11 && pkt_w[3].sop ? 1'b0 : arb;
+    end
    end
 
 
