@@ -1,4 +1,4 @@
-module mux (
+module mux_golden (
   input  wire a,
   input  wire b,
   input  wire c,
