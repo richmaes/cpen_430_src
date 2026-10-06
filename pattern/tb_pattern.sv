@@ -52,7 +52,7 @@ module tb_pattern #(
             @(negedge clk);
             data_in = serial_bit;
 
-            history = {serial_bit, history[PATTERN_WIDTH-1:1]};
+            history = {history[PATTERN_WIDTH-2:0], serial_bit};
             if (history_count < PATTERN_WIDTH)
                 history_count = history_count + 1;
 
@@ -66,7 +66,7 @@ module tb_pattern #(
             end
 
             expected_one = 1'b0;
-            if (serial_bit == TARGET_PATTERN[one_progress]) begin
+            if (serial_bit == TARGET_PATTERN[PATTERN_WIDTH-1-one_progress]) begin
                 if (one_progress == PATTERN_WIDTH-1) begin
                     expected_one = 1'b1;
                     one_matches = one_matches + 1;
@@ -78,7 +78,7 @@ module tb_pattern #(
             end
             else begin
                 one_progress = 0;
-                if (serial_bit == TARGET_PATTERN[0])
+                if (serial_bit == TARGET_PATTERN[PATTERN_WIDTH-1])
                     one_progress = 1;
             end
 
@@ -120,7 +120,7 @@ module tb_pattern #(
             $fatal(1, "Both match outputs must be low after reset");
 
         for (i = 0; i < 40; i = i + 1)
-            send_and_check(TEST_STREAM[i]);
+            send_and_check(TEST_STREAM[39-i]);
 
         if (many_matches == 0)
             $fatal(1, "TEST_STREAM did not contain TARGET_PATTERN");
