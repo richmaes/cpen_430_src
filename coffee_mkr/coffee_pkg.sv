@@ -14,11 +14,13 @@ package coffee_pkg;
     localparam int unsigned CLK_FREQ_HZ   = 50_000_000; // DE2-115 CLOCK_50
     localparam int unsigned SIM_SPEEDUP   = 1;           // override in tb to shrink cycle counts
 
-    // Converts a recipe duration in seconds to clock cycles at elaboration time.
-    function automatic int unsigned sec_to_cycles(real seconds,
-                                                    int unsigned clk_freq_hz = CLK_FREQ_HZ,
-                                                    int unsigned speedup     = SIM_SPEEDUP);
-        return $rtoi((seconds * clk_freq_hz) / speedup);
+    // Converts a duration in deciseconds to clock cycles at elaboration time.
+    function automatic logic [31:0] ds_to_cycles(logic [31:0] duration_ds,
+                                                  logic [31:0] clk_freq_hz = CLK_FREQ_HZ,
+                                                  logic [31:0] speedup     = SIM_SPEEDUP);
+        logic [63:0] numerator;
+        numerator = {32'b0, duration_ds} * {32'b0, clk_freq_hz};
+        return numerator / (64'd10 * speedup);
     endfunction
 
     // -----------------------------------------------------------------
@@ -46,12 +48,12 @@ package coffee_pkg;
     } drink_size_e;
     localparam int unsigned NUM_SIZES = 3;
 
-    function automatic real size_to_oz(drink_size_e size);
+    function automatic logic [7:0] size_to_oz(drink_size_e size);
         case (size)
-            SIZE_10OZ: return 10.0;
-            SIZE_16OZ: return 16.0;
-            SIZE_20OZ: return 20.0;
-            default:   return 10.0;
+            SIZE_10OZ: return 8'd10;
+            SIZE_16OZ: return 8'd16;
+            SIZE_20OZ: return 8'd20;
+            default:   return 8'd10;
         endcase
     endfunction
 
@@ -122,71 +124,72 @@ package coffee_pkg;
 
     // -----------------------------------------------------------------
     // Recipe timing model (architecture.md §6 / coffee_receipie.md).
-    // All rates below except R_POUR are documented assumptions pending
-    // instructor confirmation (architecture.md §10, conflict #5).
+    // Per-ounce timing values except POUR_DS_PER_OZ are documented
+    // assumptions pending instructor confirmation (architecture.md §10, conflict #5).
     // -----------------------------------------------------------------
-    localparam real R_POUR       = 1.0;  // oz/sec, POUROVER_EN - given by PRD
-    localparam real R_WATER      = 1.0;  // oz/sec, WATER_EN   - ASSUMPTION
-    localparam real R_PRESSURE   = 0.5;  // oz/sec, PRESSURE_EN - ASSUMPTION
-    localparam real R_ND         = 1.0;  // oz/sec, ND_EN      - ASSUMPTION
-    localparam real SHOT_OZ      = 2.0;  // fixed espresso shot volume - ASSUMPTION
-    localparam real CH_VOL_OZ    = 1.0;  // fixed Mocha topping volume - ASSUMPTION
-    localparam real CH_PULSE_SEC = 3.0;  // fixed Mocha topping pulse duration - ASSUMPTION
-    localparam real GRIND_RATE   = 0.3;  // sec/oz of grounds-contact volume - ASSUMPTION
-    localparam real PAPER_PULSE  = 1.0;  // sec, fixed filter-advance pulse - ASSUMPTION
+    localparam logic [15:0] POUR_DS_PER_OZ     = 16'd10; // 1 oz/sec
+    localparam logic [15:0] WATER_DS_PER_OZ    = 16'd10; // 1 oz/sec
+    localparam logic [15:0] PRESSURE_DS_PER_OZ = 16'd20; // 0.5 oz/sec
+    localparam logic [15:0] ND_DS_PER_OZ       = 16'd10; // 1 oz/sec
+    localparam logic [7:0] SHOT_OZ            = 8'd2;  // fixed espresso shot volume
+    localparam logic [7:0] CH_VOL_OZ          = 8'd1;  // fixed Mocha topping volume
+    localparam logic [15:0] CH_PULSE_DS       = 16'd30;
+    localparam logic [15:0] GRIND_DS_PER_OZ    = 16'd3; // 0.3 sec/oz
+    localparam logic [15:0] PAPER_PULSE_DS    = 16'd10;
 
-    // Per-recipe step durations, in seconds. 0.0 means the signal is
+    // Per-recipe step durations, in deciseconds. 0 means the signal is
     // unused for that drink type (matches coffee_receipie.csv columns).
     typedef struct packed {
-        real paper_s;
-        real grind_s;
-        real pourover_s;
-        real pressure_s;
-        real water_s;
-        real ch_s;
-        real nd_s;
-        real total_s;
+        logic [15:0] paper_ds;
+        logic [15:0] grind_ds;
+        logic [15:0] pourover_ds;
+        logic [15:0] pressure_ds;
+        logic [15:0] water_ds;
+        logic [15:0] ch_ds;
+        logic [15:0] nd_ds;
+        logic [15:0] total_ds;
     } recipe_steps_t;
 
     // Computes the step durations for a given drink type/size from the
     // timing model constants above - single source of truth for the
     // chart in coffee_receipie.md / coffee_receipie.csv.
-    function automatic recipe_steps_t get_recipe_seconds(drink_type_e drink, drink_size_e size);
+    function automatic recipe_steps_t get_recipe_ds(drink_type_e drink, drink_size_e size);
         recipe_steps_t r;
-        real size_oz = size_to_oz(size);
-        r = '{default: 0.0};
-        r.paper_s = PAPER_PULSE;
+        logic [7:0] size_oz;
+        size_oz = size_to_oz(size);
+        r = '0;
+        r.paper_ds = PAPER_PULSE_DS;
 
         case (drink)
             DRINK_DRIP: begin
-                r.grind_s    = GRIND_RATE * size_oz;
-                r.pourover_s = size_oz / R_POUR;
+                r.grind_ds    = GRIND_DS_PER_OZ * size_oz;
+                r.pourover_ds = POUR_DS_PER_OZ * size_oz;
             end
             DRINK_AMERICANO: begin
-                r.grind_s    = GRIND_RATE * SHOT_OZ;
-                r.pressure_s = SHOT_OZ / R_PRESSURE;
-                r.water_s    = (size_oz - SHOT_OZ) / R_WATER;
+                r.grind_ds    = GRIND_DS_PER_OZ * SHOT_OZ;
+                r.pressure_ds = PRESSURE_DS_PER_OZ * SHOT_OZ;
+                r.water_ds    = WATER_DS_PER_OZ * (size_oz - SHOT_OZ);
             end
             DRINK_LATTE: begin
-                r.grind_s    = GRIND_RATE * SHOT_OZ;
-                r.pressure_s = SHOT_OZ / R_PRESSURE;
-                r.nd_s       = (size_oz - SHOT_OZ) / R_ND;
+                r.grind_ds    = GRIND_DS_PER_OZ * SHOT_OZ;
+                r.pressure_ds = PRESSURE_DS_PER_OZ * SHOT_OZ;
+                r.nd_ds       = ND_DS_PER_OZ * (size_oz - SHOT_OZ);
             end
             DRINK_MOCHA: begin
-                r.grind_s    = GRIND_RATE * SHOT_OZ;
-                r.pressure_s = SHOT_OZ / R_PRESSURE;
-                r.ch_s       = CH_PULSE_SEC;
-                r.nd_s       = (size_oz - SHOT_OZ - CH_VOL_OZ) / R_ND;
+                r.grind_ds    = GRIND_DS_PER_OZ * SHOT_OZ;
+                r.pressure_ds = PRESSURE_DS_PER_OZ * SHOT_OZ;
+                r.ch_ds       = CH_PULSE_DS;
+                r.nd_ds       = ND_DS_PER_OZ * (size_oz - SHOT_OZ - CH_VOL_OZ);
             end
             DRINK_ESPRESSO: begin
-                r.grind_s    = GRIND_RATE * size_oz;
-                r.pressure_s = size_oz / R_PRESSURE;
+                r.grind_ds    = GRIND_DS_PER_OZ * size_oz;
+                r.pressure_ds = PRESSURE_DS_PER_OZ * size_oz;
             end
             default: ; // r already zeroed above
         endcase
 
-        r.total_s = r.paper_s + r.grind_s + r.pourover_s + r.pressure_s
-                  + r.water_s + r.ch_s + r.nd_s;
+        r.total_ds = r.paper_ds + r.grind_ds + r.pourover_ds + r.pressure_ds
+                   + r.water_ds + r.ch_ds + r.nd_ds;
         return r;
     endfunction
 
