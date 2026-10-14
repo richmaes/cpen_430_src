@@ -64,65 +64,6 @@ package coffee_pkg;
     } order_t;
 
     // -----------------------------------------------------------------
-    // Operating states (architecture.md §7).
-    // -----------------------------------------------------------------
-    typedef enum logic [2:0] {
-        ST_IDLE,
-        ST_SELECTING,
-        ST_CONFIRM,
-        ST_BREWING,
-        ST_WARNING,
-        ST_ERROR
-    } coffee_state_e;
-
-    typedef enum logic [1:0] {
-        SEV_NORMAL,
-        SEV_WARNING,
-        SEV_ERROR
-    } severity_e;
-
-    // -----------------------------------------------------------------
-    // Standard Coffee Processing Interface (architecture.md §4).
-    // -----------------------------------------------------------------
-    localparam logic [1:0] PAPER_OK            = 2'b11;
-    localparam logic [1:0] PAPER_ALMOST_EMPTY  = 2'b10;
-    localparam logic [1:0] PAPER_EMPTY         = 2'b01;
-    localparam logic [1:0] PAPER_NOT_INSTALLED = 2'b00;
-
-    localparam logic [1:0] W_PRESSURE_ERROR_COND = 2'b11;
-    localparam logic [1:0] W_PRESSURE_HIGH       = 2'b10;
-    localparam logic [1:0] W_PRESSURE_OK         = 2'b01;
-    localparam logic [1:0] W_PRESSURE_LOW        = 2'b00;
-
-    // Inputs (sensors) - 10 bits total, mapped to slide switches in HW.
-    typedef struct packed {
-        logic [1:0] PAPER_LEVEL;
-        logic       BIN_0_AMPTY;
-        logic       BIN_1_AMPTY;
-        logic       ND_AMPTY;
-        logic       CH_AMPTY;
-        logic [1:0] W_PRESSURE;
-        logic       W_TEMP;
-        logic       STATUS;
-    } sensor_in_t;
-    localparam int unsigned SENSOR_IN_WIDTH = $bits(sensor_in_t);
-
-    // Outputs (actuators) - 9 bits total, mapped to LEDs in HW.
-    // PRESSURE_EN is a student-added extension for espresso pressurized pour.
-    typedef struct packed {
-        logic HEAT_EN;
-        logic POUROVER_EN;
-        logic WATER_EN;
-        logic GRINDER_0_EN;
-        logic GRINDER_1_EN;
-        logic PAPER_EN;
-        logic CH_EN;
-        logic ND_EN;
-        logic PRESSURE_EN;
-    } actuator_out_t;
-    localparam int unsigned ACTUATOR_OUT_WIDTH = $bits(actuator_out_t);
-
-    // -----------------------------------------------------------------
     // Recipe timing model (architecture.md §6 / coffee_receipie.md).
     // Per-ounce timing values except POUR_DS_PER_OZ are documented
     // assumptions pending instructor confirmation (architecture.md §10, conflict #5).
@@ -131,11 +72,11 @@ package coffee_pkg;
     localparam logic [15:0] WATER_DS_PER_OZ    = 16'd10; // 1 oz/sec
     localparam logic [15:0] PRESSURE_DS_PER_OZ = 16'd20; // 0.5 oz/sec
     localparam logic [15:0] ND_DS_PER_OZ       = 16'd10; // 1 oz/sec
-    localparam logic [7:0] SHOT_OZ            = 8'd2;  // fixed espresso shot volume
-    localparam logic [7:0] CH_VOL_OZ          = 8'd1;  // fixed Mocha topping volume
-    localparam logic [15:0] CH_PULSE_DS       = 16'd30;
+    localparam logic [7:0] SHOT_OZ             = 8'd2;  // fixed espresso shot volume
+    localparam logic [7:0] CH_VOL_OZ           = 8'd1;  // fixed Mocha topping volume
+    localparam logic [15:0] CH_PULSE_DS        = 16'd30;
     localparam logic [15:0] GRIND_DS_PER_OZ    = 16'd3; // 0.3 sec/oz
-    localparam logic [15:0] PAPER_PULSE_DS    = 16'd10;
+    localparam logic [15:0] PAPER_PULSE_DS     = 16'd10;
 
     // Per-recipe step durations, in deciseconds. 0 means the signal is
     // unused for that drink type (matches coffee_receipie.csv columns).
