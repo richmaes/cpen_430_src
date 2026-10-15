@@ -1,3 +1,6 @@
+// This is my Mux file
+// Author: Rich Maes
+
 module mux (
   input  wire a,
   input  wire b,
