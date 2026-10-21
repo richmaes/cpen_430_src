@@ -1,5 +1,6 @@
 module coffee_top (
     input CLOCK_50,
+    input RST,
     input [17:0] SW,
     input [3:0] KEY,
     output [8:0]LEDG,
@@ -7,5 +8,9 @@ module coffee_top (
 );
 
 assign LEDG = 9'h0;
-assign LEDR = 18'h00000;
+assign LEDR = SW;
+assign RST = SW[17];
+
 endmodule
+
+//FPGA top level	coffee_top.sv

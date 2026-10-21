@@ -23,7 +23,7 @@ work:
 # List your SystemVerilog source files for firebird
 # Include common support files (clock/reset/assert) if needed
 TB_FILES = ../common/irst.v ../common/iclk.v ../common/assert_cpen430.v coffee_tb.sv
-RTL_FILES = coffee_top.sv
+RTL_FILES = coffee_top.sv coffee_fsm.sv coffee_lcd.sv coffee_io.sv coffee_debounce.sv
 # Specify the top-level module for simulation
 TOP_MODULE = coffee_tb
 TOP_OPT_MODULE = $(TOP_MODULE)_opt

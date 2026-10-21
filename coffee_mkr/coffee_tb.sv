@@ -34,7 +34,8 @@ coffee_top u_coffee_top
     .SW(SW),
     .KEY(KEY),
     .LEDG(LEDG),
-    .LEDR(LEDR)
+    .LEDR(LEDR),
+    .RST(SW[17])
 );
 
 endmodule
