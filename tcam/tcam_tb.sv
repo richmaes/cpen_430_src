@@ -17,7 +17,7 @@ module tcam_tb;
 	wire no_match;
 	wire [2:0] match_addr;
 	localparam integer LOOKUP_CYCLES = 9;
-	localparam integer MAX_LOOKUPS = 1000;
+	localparam integer MAX_LOOKUPS = 10;
 	integer cycle_count = 0;
 	integer sent_count = 0;
 	integer received_count = 0;
@@ -105,7 +105,7 @@ module tcam_tb;
 		$fatal(1, "Lookup test timeout");
 	end
 
-	mini_tcam dut (
+	TCAM_512 dut (
 		.clk(clk),
 		.rst(rst),
 		.data(data),
