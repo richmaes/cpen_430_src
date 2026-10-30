@@ -32,12 +32,34 @@ Relative paths are resolved from the simulator's working directory.
 The supplied `entries.hex` contains eight known patterns: each entry repeats
 its address digit across all 128 hexadecimal digits. The testbench first loads
 `dut.mem[0]` through `dut.mem[7]`, holds reset with `valid` low for two clocks,
-then checks and prints every entry. It then sends 1,000 lookups at exactly
+then checks and prints every entry. It then sends `MAX_LOOKUPS` lookups at exactly
 9-clock intervals, repeating a pattern of eight exact-match queries, two masks constructed to match
 at least two loaded entries, an all-don't-care query, and a guaranteed miss.
-A reference comparison over the loaded data checks the lowest numerical
-matching address, result timing, and single-cycle result pulses. Changing
-key/mask inputs after each request also checks that the DUT latches them.
+A 16-entry expected-result FIFO checks the lowest numerical matching address
+and response order without requiring an exact response latency. Requests
+remain nine clocks apart. The test waits for all responses before finishing;
+FIFO overflow, unsolicited responses, unknown result signals, simultaneous
+`match`/`no_match`, extended result pulses, and a global timeout are errors.
+The timeout includes a FIFO-depth drain allowance after the request stream.
+Changing key/mask inputs after each request also checks that the DUT latches them.
+
+## Variable-Latency Check
+
+The optional `VARY_RESPONSE_LATENCY` testbench parameter inserts a simulation-only
+delay shim between the DUT's result ports and the scoreboard. It forwards real
+responses, cycling through 0, 2, and 4 extra clocks, with a half-clock capture
+offset. The scoreboard therefore observes latencies of 10, 12, and 14 clocks
+with the supplied 9-clock DUT. Responses stay ordered and retain one-cycle
+pulses. Requests remain nine clocks apart; the DUT itself is unchanged.
+The shim is for this testbench's initial-reset-only stimulus.
+
+After compiling, run from the `tcam` directory:
+
+```text
+vsim -c -onfinish exit -gVARY_RESPONSE_LATENCY=1 work.tcam_tb +MEM_FILE=entries.hex -do "run -all; quit -f"
+```
+
+Normal launcher runs leave this parameter disabled and check the DUT directly.
 
 ## Launch Script
 
