@@ -1,6 +1,6 @@
 # Mini-TCAM Testbench
 
-Compile `mini_tcam.sv` and `tcam_tb.sv` as SystemVerilog. The testbench loads eight
+Compile `main.sv` and `tcam_tb.sv` as SystemVerilog. The testbench loads eight
 512-bit entries into the dummy DUT's packed `mem` array through hierarchical
 assignments. There is no hardware write port. Reset does not clear memory.
 
@@ -80,7 +80,7 @@ removing any existing work library:
 
 ```text
 vlib work
-vlog -sv mini_tcam.sv tcam_tb.sv
+vlog -sv main.sv tcam_tb.sv
 vsim -c work.tcam_tb +MEM_FILE=entries.hex -do "run -all; quit -f"
 ```
 

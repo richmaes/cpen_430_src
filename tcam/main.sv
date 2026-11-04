@@ -31,7 +31,7 @@ module main(
 
 	always @(posedge clk) 
 	begin
-		mem_out = mem_out | mask;
+		mem_out = mem_out | maskLock;
 		if(key == mem_out) begin
 			match = 1;
 			no_match = 0;
@@ -49,12 +49,14 @@ module main(
 		if(no_match == 1) begin
 			addr <= 3'b111;
 		end
+
+		if(counter >= 8) begin
+			counter = 0;
+			if(valid) begin
+				maskLock = mask;
+				keyLock = key;
+			end
+		end
 	end
-	/*Tuesday
-		if valid
-			lock mask and key
-			wait 8 clock
-			chek valid again
-	*/
 endmodule
 

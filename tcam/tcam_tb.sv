@@ -162,15 +162,15 @@ module tcam_tb #(
 		$fatal(1, "Lookup test timeout: sent=%0d received=%0d", sent_count, received_count);
 	end
 
-	mini_tcam dut (
+	main.sv dut (
 		.clk(clk),
 		.rst(rst),
-		.data(data),
-		.tcam(tcam),
+		.key(data),
+		.mask(tcam),
 		.valid(valid),
 		.match(dut_match),
 		.no_match(dut_no_match),
-		.match_addr(dut_match_addr)
+		.addr(dut_match_addr)
 	);
 
 	initial begin
