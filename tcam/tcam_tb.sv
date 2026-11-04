@@ -1,6 +1,8 @@
 `timescale 1ns/1ps
 
-module tcam_tb;
+module tcam_tb #(
+	parameter bit VARY_RESPONSE_LATENCY = 1'b0
+);
 	localparam integer ENTRY_WIDTH = 512;
 	localparam integer ENTRY_COUNT = 8;
 
@@ -16,14 +18,21 @@ module tcam_tb;
 	wire match;
 	wire no_match;
 	wire [2:0] match_addr;
+	wire dut_match;
+	wire dut_no_match;
+	wire [2:0] dut_match_addr;
 	localparam integer LOOKUP_CYCLES = 9;
-	localparam integer MAX_LOOKUPS = 1000;
+	localparam integer MAX_LOOKUPS = 10;
+	localparam integer FIFO_DEPTH = 16;
 	integer cycle_count = 0;
 	integer sent_count = 0;
 	integer received_count = 0;
 	integer multiple_match_count = 0;
-	integer due_cycle [0:MAX_LOOKUPS-1];
-	integer expected_addr [0:MAX_LOOKUPS-1];
+	integer expected_addr [0:FIFO_DEPTH-1];
+	integer read_ptr = 0;
+	integer write_ptr = 0;
+	integer last_request_cycle = -1;
+	bit previous_result = 1'b0;
 	logic [ENTRY_WIDTH-1:0] miss_key;
 	bit miss_found;
 	integer candidate;
@@ -33,27 +42,74 @@ module tcam_tb;
 
 	always #5 clk = ~clk;
 
+	generate
+		if (VARY_RESPONSE_LATENCY) begin : variable_latency
+			logic delayed_match = 1'b0;
+			logic delayed_no_match = 1'b0;
+			logic [2:0] delayed_addr = '0;
+			integer response_index = 0;
+			integer delay_ns;
+
+			assign match = delayed_match;
+			assign no_match = delayed_no_match;
+			assign match_addr = delayed_addr;
+
+			always @(negedge clk) begin
+				if (!rst) begin
+					if ($isunknown({dut_match, dut_no_match}))
+						$fatal(1, "Unknown DUT result signals before delay shim");
+					if (dut_match || dut_no_match) begin
+						delay_ns = (response_index % 3) * 20;
+						$display("Delaying DUT response %0d by %0d extra clocks",
+							response_index, delay_ns / 10);
+						delayed_match <= #(delay_ns) dut_match;
+						delayed_no_match <= #(delay_ns) dut_no_match;
+						delayed_addr <= #(delay_ns) dut_match_addr;
+						delayed_match <= #(delay_ns + 10) 1'b0;
+						delayed_no_match <= #(delay_ns + 10) 1'b0;
+						response_index = response_index + 1;
+					end
+				end
+			end
+		end
+		else begin : direct_response
+			assign match = dut_match;
+			assign no_match = dut_no_match;
+			assign match_addr = dut_match_addr;
+		end
+	endgenerate
+
 	always @(posedge clk) begin
 		cycle_count = cycle_count + 1;
 		#1;
 		if (!rst) begin
-			if (received_count < sent_count && cycle_count == due_cycle[received_count]) begin
-				if (expected_addr[received_count] == -1) begin
+			if ($isunknown({match, no_match}))
+				$fatal(1, "Unknown result signals at cycle %0d", cycle_count);
+			if (match && no_match)
+				$fatal(1, "match and no_match asserted together");
+			if (match || no_match) begin
+				if (previous_result)
+					$fatal(1, "Result outputs must be single-cycle pulses");
+				if (received_count == sent_count)
+					$fatal(1, "Unexpected response with no pending lookup");
+				if (expected_addr[read_ptr] == -1) begin
 					if (match !== 1'b0 || no_match !== 1'b1)
 						$fatal(1, "Lookup %0d: expected no_match", received_count);
 				end
 				else if (match !== 1'b1 || no_match !== 1'b0 ||
-					match_addr !== expected_addr[received_count]) begin
+					match_addr !== expected_addr[read_ptr]) begin
 					$fatal(1, "Lookup %0d: expected address %0d, got match=%b no_match=%b address=%0d",
-						received_count, expected_addr[received_count], match, no_match, match_addr);
+						received_count, expected_addr[read_ptr], match, no_match, match_addr);
 				end
 				$display("Lookup %0d: PASS at cycle %0d, expected address=%0d",
-					received_count, cycle_count, expected_addr[received_count]);
+					received_count, cycle_count, expected_addr[read_ptr]);
+				read_ptr = (read_ptr + 1) % FIFO_DEPTH;
 				received_count = received_count + 1;
 			end
-			else if (match !== 1'b0 || no_match !== 1'b0)
-				$fatal(1, "Unexpected or early result at cycle %0d", cycle_count);
+			previous_result = match || no_match;
 		end
+		else
+			previous_result = 1'b0;
 	end
 
 	task automatic send_lookup(
@@ -66,8 +122,8 @@ module tcam_tb;
 		integer lowest_addr;
 		begin
 			@(negedge clk);
-			if (sent_count == MAX_LOOKUPS)
-				$fatal(1, "Lookup scoreboard full");
+			if (sent_count - received_count >= FIFO_DEPTH)
+				$fatal(1, "Expected-result FIFO full");
 			hit_count = 0;
 			lowest_addr = -1;
 			for (address = 0; address < ENTRY_COUNT; address = address + 1) begin
@@ -81,10 +137,11 @@ module tcam_tb;
 				$fatal(1, "Multiple-match query must hit at least two entries");
 			if (hit_count >= 2)
 				multiple_match_count = multiple_match_count + 1;
-			due_cycle[sent_count] = cycle_count + 1 + LOOKUP_CYCLES;
-			if (sent_count > 0 && due_cycle[sent_count] - due_cycle[sent_count-1] != LOOKUP_CYCLES)
+			if (sent_count > 0 && cycle_count + 1 - last_request_cycle != LOOKUP_CYCLES)
 				$fatal(1, "Requests must be spaced exactly nine clocks apart");
-			expected_addr[sent_count] = lowest_addr;
+			last_request_cycle = cycle_count + 1;
+			expected_addr[write_ptr] = lowest_addr;
+			write_ptr = (write_ptr + 1) % FIFO_DEPTH;
 			$display("Sending lookup %0d: %0d matching entries, lowest address=%0d",
 				sent_count, hit_count, lowest_addr);
 			sent_count = sent_count + 1;
@@ -101,8 +158,8 @@ module tcam_tb;
 	endtask
 
 	initial begin
-		repeat ((MAX_LOOKUPS + 1) * LOOKUP_CYCLES + 20) @(posedge clk);
-		$fatal(1, "Lookup test timeout");
+		repeat ((MAX_LOOKUPS + FIFO_DEPTH + 1) * LOOKUP_CYCLES + 20) @(posedge clk);
+		$fatal(1, "Lookup test timeout: sent=%0d received=%0d", sent_count, received_count);
 	end
 
 	mini_tcam dut (
@@ -111,9 +168,9 @@ module tcam_tb;
 		.data(data),
 		.tcam(tcam),
 		.valid(valid),
-		.match(match),
-		.no_match(no_match),
-		.match_addr(match_addr)
+		.match(dut_match),
+		.no_match(dut_no_match),
+		.match_addr(dut_match_addr)
 	);
 
 	initial begin
@@ -171,8 +228,8 @@ module tcam_tb;
 				default: send_lookup(entries[lookup_index % 12], '0, 1'b0);
 			endcase
 		end
-		@(posedge clk);
-		#2;
+		wait (received_count == sent_count);
+		@(negedge clk);
 		if (received_count != MAX_LOOKUPS || sent_count != MAX_LOOKUPS || multiple_match_count < 2)
 			$fatal(1, "Incomplete lookup coverage");
 		repeat (2) @(posedge clk);
