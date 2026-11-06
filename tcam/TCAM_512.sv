@@ -9,45 +9,56 @@ output logic no_match,
 output logic match,
 output logic [2:0] match_addr
 );
+logic [511:0] key_q;
+logic [511:0] mask_q;
 
 logic [7:0][511:0] mem;
 logic [511:0] mem_out;
-logic [2:0] count;
-/*
-		.clk(clk),
-		.rst(rst),
-		.data(data),
-		.tcam(tcam),
-		.valid(valid),
-		.match(match),
-		.no_match(no_match),
-		.match_addr(match_addr)
-*/
+logic         busy;
+logic [2:0]   address;
+logic [511:0] diff;
+logic         hit;
 
-always @(posedge clk) // search
-	begin
-		if(rst)begin
-			count <= 0;
-		end else begin
-		
-			count <= count + 3'b001;
-		end
-
+always @(*) 
+begin
+    hit = &(~(mem[address] ^ key_q) | mask_q);
+end
+always @(posedge clk)
+    begin
+	if (rst) begin
+    	    busy       <= 1'b0;
+	    address    <= 3'd0;
+	    key_q      <= '0;
+	    mask_q     <= '0;
+	    match      <= 1'b0;
+	    no_match   <= 1'b0;
+	    match_addr <= 3'd0;
 	end
+	else begin
+	    match    <= 1'b0;
+	    no_match <= 1'b0;
+	    if (busy) begin
+		if (hit) begin
+		    match      <= 1'b1;
+	  	    match_addr <= address;
+		    busy       <= 1'b0;
+		end
+		else if (address == 7) begin
+		    no_match <= 1'b1;
+		    busy     <= 1'b0;
+		end
+		else begin
+		    address <= address + 3'd1;
+		end
+	    	end
+	    	else if (valid) begin
+		key_q  <= data;
+		mask_q <= tcam;
+		address <= 3'd0;
+		busy   <= 1'b1;
+	 	end
+	    end
+	end
+endmodule
 
-always @(posedge clk)
-begin
-	mem_out <= mem[count];
-end
-
-
-always @(posedge clk)
-begin
-	match <= (valid &( &(tcam |~(data^mem[count]))));
-	no_match <= !(valid &( &(tcam |~(data^mem[count]))));
-	match_addr <= mem[count];
-
-end
-
-endmodule 
 
