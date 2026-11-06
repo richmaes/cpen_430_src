@@ -161,7 +161,7 @@ module tcam_tb #(
 		repeat ((MAX_LOOKUPS + FIFO_DEPTH + 1) * LOOKUP_CYCLES + 20) @(posedge clk);
 		$fatal(1, "Lookup test timeout: sent=%0d received=%0d", sent_count, received_count);
 	end
-//
+
 	main dut(
 		.clk(clk),
 		.rst(rst),

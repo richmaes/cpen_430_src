@@ -12,7 +12,7 @@ function Invoke-ModelSimCommand {
         [Parameter(Mandatory = $true)]
         [string[]] $Arguments
     )
-
+ 
     & $Command @Arguments
     if ($LASTEXITCODE -ne 0) {
         throw "$Command failed with exit code $LASTEXITCODE"
