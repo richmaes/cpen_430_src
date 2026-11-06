@@ -14,6 +14,7 @@ module main(
 	logic [7:0][511:0] mem;
 	reg [2:0] counter = 0;
 	logic [511:0] mem_out;
+	logic [511:0] maskLock, keyLock;
 
 	always @(posedge clk) 
 	begin

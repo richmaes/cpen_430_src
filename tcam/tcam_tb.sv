@@ -162,7 +162,7 @@ module tcam_tb #(
 		$fatal(1, "Lookup test timeout: sent=%0d received=%0d", sent_count, received_count);
 	end
 
-	main.sv dut (
+	main dut(
 		.clk(clk),
 		.rst(rst),
 		.key(data),
