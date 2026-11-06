@@ -7,55 +7,47 @@ module main(
 	input 			valid,
 	output reg 		match,
 	output reg 		no_match,
-	output reg [2:0] 	addr = 3'b111
+	output reg [2:0] 	addr = 7
 );
 	
 	
-	logic [7:0][511:0] mem;
-	reg [2:0] counter = 0;
-	logic [511:0] mem_out;
-	logic [511:0] maskLock, keyLock;
+	logic [7:0][511:0] 	mem;
+	reg   [2:0] 		counter = 0;
+	logic [511:0] 		mem_out;
+	logic [511:0] 		maskLock, keyLock;
+	reg			busy;
 
 	always @(posedge clk) 
 	begin
-		if(counter == 3'b111 || rst) begin
-			counter = 3'd0;
-		end else begin
-			counter <= counter +1;
+		match    <= 1'b0;
+		no_match <= 1'b0;
+
+		if (rst) begin
+			busy    <= 1'b0;
+			counter <= 3'd0;
+			addr    <= 3'd7;
 		end
-	end 
-
-	always @(posedge clk)
-	begin
-		mem_out <= mem[counter];
-	end
-
-	always @(posedge clk) 
-	begin
-		mem_out = mem_out | maskLock;
-		if(key == mem_out) begin
-			match = 1;
-			no_match = 0;
-			if(counter < addr) begin
-				addr <= counter;
+		else if (!busy) begin
+			if (valid) begin
+				keyLock  <= key;
+				maskLock <= mask;
+				counter  <= 3'd0;
+				busy     <= 1'b1;
 			end
-		end else begin
-			match = 0;
-			no_match = 1;
 		end
-	end
-
-	always @(posedge clk)
-	begin
-		if(no_match == 1) begin
-			addr <= 3'b111;
-		end
-
-		if(counter >= 8) begin
-			counter = 0;
-			if(valid) begin
-				maskLock = mask;
-				keyLock = key;
+		else begin
+			if ((mem[counter] | maskLock) == (keyLock | maskLock)) begin
+				match <= 1'b1;
+				addr  <= counter; 
+				busy  <= 1'b0;
+			end
+			else if (counter == 3'd7) begin
+				no_match <= 1'b1;
+				addr     <= 3'd7;
+				busy     <= 1'b0;
+			end
+			else begin
+				counter <= counter + 3'd1;
 			end
 		end
 	end

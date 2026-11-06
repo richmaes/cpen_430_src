@@ -40,7 +40,7 @@ try {
     Invoke-ModelSimCommand -Command 'vlog' -Arguments @(
         '-sv',
         '-work', 'work',
-        'mini_tcam.sv',
+        'main.sv',
         'tcam_tb.sv'
     )
 
