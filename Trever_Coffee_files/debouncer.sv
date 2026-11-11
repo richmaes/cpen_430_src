@@ -1,29 +1,19 @@
-// switch debouncer
-module debouncer (
-    input  logic clk,
-    input  logic noisy,
-    output logic  clean
+module debouncer #(parameter integer COUNT = 50000)(
+    input logic clk, noisy,
+    output logic clean = 0
 );
+    // 1. Synchronize the button and count stable clock cycles
+    logic [$clog2(COUNT+1)-1:0] count = 0;
+    
+	 logic sync1 = 0, sync2 = 0;
 
-    reg sync1, sync2;
-    integer count;
-
-    always @(posedge clk) begin
-        begin
-            // Synchronize the switch
-            sync1 <= noisy;
-            sync2 <= sync1;
-
-            // Debounce the switch
-            if (sync2 == clean)
-                count <= 0;
-            else if (count == 6000000 - 1) begin //fix limit thing later
-                clean <= sync2;
-                count <= 0;
-            end
-            else
-                count <= count + 1;
-        end
+    always_ff @(posedge clk) begin
+        sync1 <= noisy;
+        sync2 <= sync1;
+        if (sync2 == clean) count <= 0;
+        else if (count == COUNT-1) begin
+            clean <= sync2;
+            count <= 0;
+        end else count <= count + 1'b1;
     end
-
 endmodule
