@@ -37,6 +37,8 @@ typedef enum logic [3:0] {
   WAIT_1_MS_0,
   FS_2,
   WAIT_1_MS_1,
+  DISPLAY_SET_SIZE,
+  WAIT_1_MS_1a,
   DISPLAY_OFF,
   WAIT_1_MS_2,
   DISPLAY_CLEAR,
@@ -107,13 +109,15 @@ begin
    case (ltssm)
    INIT: nxt_ltssm = WAIT_15_MS;
    WAIT_15_MS: nxt_ltssm = timer_15ms ? FS_0 : WAIT_15_MS;
-   FS_0: nxt_ltssm = WAIT_5_MS;
+   FS_0: nxt_ltssm = WAIT_5_MS; // Set interface width
    WAIT_5_MS: nxt_ltssm = timer_5ms ? FS_1 : WAIT_5_MS;
-   FS_1: nxt_ltssm = WAIT_1_MS_0;
+   FS_1: nxt_ltssm = WAIT_1_MS_0; // Set interface width again..... ???
    WAIT_1_MS_0: nxt_ltssm = timer_1ms ? FS_2 : WAIT_1_MS_0;
-   FS_2: nxt_ltssm = WAIT_1_MS_1;
-   WAIT_1_MS_1: nxt_ltssm = timer_1ms ? DISPLAY_OFF : WAIT_1_MS_1;
-   DISPLAY_OFF: nxt_ltssm = WAIT_1_MS_2;
+   FS_2: nxt_ltssm = WAIT_1_MS_1;  // Set interface width a third time...... wow....
+   WAIT_1_MS_1: nxt_ltssm = timer_1ms ? DISPLAY_SET_SIZE : WAIT_1_MS_1;
+   DISPLAY_SET_SIZE: nxt_ltssm = WAIT_1_MS_1a; // Set the number of display lines, and font
+   WAIT_1_MS_1a: nxt_ltssm = timer_1ms ? DISPLAY_OFF : WAIT_1_MS_1;
+   DISPLAY_OFF: nxt_ltssm = WAIT_1_MS_2; 
    WAIT_1_MS_2: nxt_ltssm = timer_1ms ? DISPLAY_CLEAR : WAIT_1_MS_2;
    DISPLAY_CLEAR: nxt_ltssm = WAIT_1_MS_3;
    WAIT_1_MS_3: nxt_ltssm = timer_1ms ? ENTRY_MODE_SET : WAIT_1_MS_3; 

@@ -33,11 +33,21 @@ module lcd_ip_tb #(
        .clk(clk),
 	   .rst(rst),
 	   .pulse(pulse),
-	   .rs(),
-	   .rw(),
-	   .e(),
-	   .db(),
+	   .rs(rs),
+	   .rw(rw),
+	   .e(e),
+	   .db(db),
 	   .debug_out()
+	);
+
+// Homebrew simulation only model
+	lcd_ip_model u_lcd_ip_model(
+		.clk(clk),
+		.rst(rst),
+		.rs(rs),
+		.rw(rw),
+		.e(e),
+		.db(db)
 	);
 
     initial 

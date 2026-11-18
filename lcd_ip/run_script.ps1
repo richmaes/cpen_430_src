@@ -58,6 +58,7 @@ try {
         'lcd_timer.sv',
         'lcd_slow_cntr.sv'
         'lcd_ip.sv',
+        'lcd_ip_model.sv'
         'lcd_ip_tb.sv'
     )
 
